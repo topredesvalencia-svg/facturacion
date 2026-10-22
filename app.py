@@ -11,6 +11,14 @@ import streamlit as st
 import counters_store
 import facturas_core as fc
 
+def nombre_descarga(numero, cliente):
+    """Nombre de descarga: 26-T0006-CatherineAntequera-TopRedes (sin tildes ni espacios)."""
+    import re
+    import unicodedata
+    sin_tildes = unicodedata.normalize("NFKD", cliente).encode("ascii", "ignore").decode("ascii")
+    solo_letras = re.sub(r"[^A-Za-z0-9]", "", sin_tildes)
+    return f"{numero}-{solo_letras}-TopRedes"
+
 SALIDA = os.path.join(fc.HERE, "facturas_generadas")
 os.makedirs(SALIDA, exist_ok=True)
 
@@ -157,7 +165,8 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
             docx_path, pdf_path, imp = fc.build_invoice(datos, SALIDA)
         fc.commit_number(serie)   # solo se incrementa si todo ha ido bien
         st.session_state.ultimo = {"numero": numero, "pdf": pdf_path, "docx": docx_path,
-                                   "total": fc.fmt(imp["total"])}
+                                   "total": fc.fmt(imp["total"]),
+                                   "nombre": nombre_descarga(numero, datos["cliente"])}
     except Exception as ex:  # noqa: BLE001
         st.error(f"No se pudo generar la factura: {ex}. ¿Está instalado LibreOffice?")
 
@@ -168,11 +177,11 @@ if ult:
     d1, d2 = st.columns(2)
     with d1:
         with open(ult["pdf"], "rb") as f:
-            st.download_button("📄 Descargar PDF", f, file_name=os.path.basename(ult["pdf"]),
+            st.download_button("📄 Descargar PDF", f, file_name=ult["nombre"] + ".pdf",
                                mime="application/pdf", use_container_width=True)
     with d2:
         with open(ult["docx"], "rb") as f:
-            st.download_button("📝 Descargar Word (editable)", f, file_name=os.path.basename(ult["docx"]),
+            st.download_button("📝 Descargar Word (editable)", f, file_name=ult["nombre"] + ".docx",
                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                                use_container_width=True)
     st.button("➕ Nueva factura", on_click=nueva_factura)
