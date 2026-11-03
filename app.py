@@ -181,7 +181,11 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
                                    "total": fc.fmt(imp["total"]),
                                    "nombre": nombre_descarga(numero, datos["cliente"])}
     except Exception as ex:  # noqa: BLE001
-        st.error(f"No se pudo generar la factura: {ex}. ¿Está instalado LibreOffice?")
+        st.error(
+            f"No se pudo completar la factura: {ex}\n\n"
+            "Si el error menciona funciones o argumentos, sube TODOS los archivos de esta carpeta "
+            "al repositorio (app.py, facturas_core.py, counters_store.py), no solo app.py."
+        )
 
 # ------------------------------------------------------------ 5. descargas
 ult = st.session_state.ultimo
