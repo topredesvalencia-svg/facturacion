@@ -37,6 +37,8 @@ Cuando la app muestra *"Numeración guardada en: Google Sheets"*, todo está bie
 - R = IVA 10 % (particulares) · N = IVA 21 % (empresas, CIF)
 - El tipo de IVA se propone según el NIF: CIF → 21 %, DNI/NIE → 10 %. Se puede cambiar a mano.
 - "Precio incluye IVA": el importe introducido es el total y se desglosa hacia atrás.
+- El número propuesto es el siguiente correlativo de la serie, pero se puede cambiar a mano (por ejemplo, si hay facturas emitidas fuera de la app).
+- Al generar una factura con el número X, el contador de la serie pasa a X + 1 (se guarda en la hoja de Google).
 - El número solo avanza si la factura se genera correctamente.
 
 ## Ejecutar en tu PC (opcional)

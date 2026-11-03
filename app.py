@@ -90,8 +90,20 @@ with col1:
 with col2:
     fecha = st.date_input("Fecha", key="fecha", format="DD/MM/YYYY")
 
-numero = fc.next_number(serie)
-st.info(f"Número de factura que se va a emitir: **{numero}**  (se asigna automáticamente y es correlativo)")
+siguiente = counters_store.read_counters()[serie]
+key_num = f"numero_{serie}"
+if key_num not in st.session_state:
+    st.session_state[key_num] = siguiente
+st.number_input(
+    f"Número de factura (serie {serie})", key=key_num, min_value=1, step=1,
+    help=f"Por defecto, el siguiente correlativo ({fc.next_number(serie)}). Puedes cambiarlo si ya hay facturas emitidas fuera de la app.",
+)
+usado = int(st.session_state[key_num])
+numero = f"26-{serie}{usado:04d}"
+if usado < siguiente:
+    st.warning(f"Este número es anterior al siguiente registrado ({fc.next_number(serie)}). Asegúrate de que no está ya emitido.")
+elif usado > siguiente:
+    st.info(f"Al generar, el siguiente número de la serie {serie} será 26-{serie}{usado + 1:04d}.")
 st.caption(f"Numeración guardada en: {counters_store.backend_name()}")
 
 st.text_input("Nombre / razón social", key="cliente")
@@ -163,7 +175,8 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
     try:
         with st.spinner("Generando PDF..."):
             docx_path, pdf_path, imp = fc.build_invoice(datos, SALIDA)
-        fc.commit_number(serie)   # solo se incrementa si todo ha ido bien
+        fc.commit_number(serie, usado)   # solo se avanza si todo ha ido bien
+        st.session_state.pop(key_num, None)  # el campo vuelve a proponer el siguiente
         st.session_state.ultimo = {"numero": numero, "pdf": pdf_path, "docx": docx_path,
                                    "total": fc.fmt(imp["total"]),
                                    "nombre": nombre_descarga(numero, datos["cliente"])}

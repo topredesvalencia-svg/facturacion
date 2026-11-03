@@ -103,9 +103,9 @@ def next_number(series):
     return f"26-{series}{c[series]:04d}"
 
 
-def commit_number(series):
-    """Incrementa el contador solo cuando la factura se ha generado con éxito."""
-    counters_store.increment(series)
+def commit_number(series, usado):
+    """Tras emitir la factura con el número 'usado', el siguiente es usado + 1."""
+    counters_store.set_next(series, int(usado) + 1)
 
 
 # ---------------------------------------------------------------- XML helpers

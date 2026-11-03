@@ -45,6 +45,22 @@ def read_counters():
         return json.load(f)
 
 
+def set_next(serie, valor):
+    """Fija el siguiente número de la serie (tras emitir la factura con ese número)."""
+    if _gsheets_ok():
+        ws = _worksheet()
+        rows = ws.get_all_records()
+        for i, r in enumerate(rows, start=2):
+            if str(r["serie"]).strip().upper() == serie:
+                ws.update_cell(i, 2, int(valor))
+                return
+        raise RuntimeError(f"No existe la serie {serie} en la hoja")
+    c = read_counters()
+    c[serie] = int(valor)
+    with open(LOCAL_FILE, "w", encoding="utf8") as f:
+        json.dump(c, f, indent=2)
+
+
 def increment(serie):
     """Suma 1 al contador de la serie. Llamar solo tras generar la factura."""
     if _gsheets_ok():
