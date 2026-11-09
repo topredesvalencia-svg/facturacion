@@ -1,0 +1,4 @@
+.streamlit/secrets.toml
+facturas_generadas/
+__pycache__/
+counters.json

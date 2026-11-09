@@ -16,7 +16,9 @@ from decimal import Decimal, ROUND_HALF_UP
 from lxml import etree
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE = os.path.join(HERE, "plantilla.docx")
+TEMPLATE = os.path.join(HERE, "plantilla.docx")                 # Top Redes
+TEMPLATE_SOS = os.path.join(HERE, "plantilla_sosmadera.docx")   # SOS Madera
+TEMPLATES = {"topredes": TEMPLATE, "sosmadera": TEMPLATE_SOS}
 COUNTERS = os.path.join(HERE, "counters.json")
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 XML_SPACE = "{http://www.w3.org/XML/1998/namespace}space"
@@ -76,7 +78,8 @@ def es_empresa(nif):
     CIF: letra + 7 dígitos + dígito/letra de control (p. ej. B97884480).
     NIF particular (8 dígitos + letra) y NIE (X/Y/Z) no son empresa.
     """
-    return bool(re.fullmatch(r"[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]", (nif or "").strip().upper()))
+    limpio = (nif or "").strip().upper().replace("-", "").replace(" ", "")
+    return bool(re.fullmatch(r"[ABCDEFGHJNPQRSUVW]\d{7}[0-9A-J]", limpio))
 
 
 def tipo_iva_sugerido(nif):
@@ -296,7 +299,8 @@ def build_invoice(datos, outdir):
     base_name = d["numero"]
     docx_out = os.path.join(outdir, f"FACTURA_{base_name}.docx")
 
-    with zipfile.ZipFile(TEMPLATE) as zin:
+    plantilla = TEMPLATES[datos.get("plantilla", "topredes")]
+    with zipfile.ZipFile(plantilla) as zin:
         xml_bytes = zin.read("word/document.xml")
         root = etree.fromstring(xml_bytes)
         _fill_document(root, d)
@@ -337,7 +341,7 @@ def parse_pegado(texto):
         if m:
             _parse_importe(m.group(2), out); continue
         # ---- sin etiqueta: reconocer por forma
-        if re.fullmatch(r"\d{8}[A-Za-z]|[A-Za-z]\d{7}[A-Za-z0-9]|[XYZxyz]\d{7}[A-Za-z]", l):
+        if re.fullmatch(r"\d{8}-?[A-Za-z]|[A-Za-z]\d{7}-?[A-Za-z0-9]|[XYZxyz]-?\d{7}-?[A-Za-z]", l.replace(" ", "")):
             out["nif"] = l.upper(); continue
         if re.match(r"^\d{5}\b", l):
             out["cp_ciudad"] = l; continue

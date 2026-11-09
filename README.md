@@ -33,6 +33,12 @@ Cuando la app muestra *"Numeración guardada en: Google Sheets"*, todo está bie
 2. Revisa datos y desglose.
 3. **Generar factura** → descarga PDF y Word. Descarga siempre los archivos: en Streamlit Cloud no se guardan en el servidor.
 
+## Plantillas
+- `plantilla.docx` → diseño Top Redes Valencia.
+- `plantilla_sosmadera.docx` → diseño SOS Madera (logo y colores marrones, datos de contacto de SOS Madera).
+- En la app, el campo **Emisor / plantilla** elige cuál usar. La numeración es la misma para ambas (mismo NIF B26945873).
+- El nombre de descarga termina en `-TopRedes` o `-SOSMadera` según la plantilla.
+
 ## Reglas
 - R = IVA 10 % (particulares) · N = IVA 21 % (empresas, CIF)
 - El tipo de IVA se propone según el NIF: CIF → 21 %, DNI/NIE → 10 %. Se puede cambiar a mano.

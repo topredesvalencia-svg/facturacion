@@ -11,13 +11,14 @@ import streamlit as st
 import counters_store
 import facturas_core as fc
 
-def nombre_descarga(numero, cliente):
+def nombre_descarga(numero, cliente, plantilla="topredes"):
     """Nombre de descarga: 26-T0006-CatherineAntequera-TopRedes (sin tildes ni espacios)."""
     import re
     import unicodedata
     sin_tildes = unicodedata.normalize("NFKD", cliente).encode("ascii", "ignore").decode("ascii")
     solo_letras = re.sub(r"[^A-Za-z0-9]", "", sin_tildes)
-    return f"{numero}-{solo_letras}-TopRedes"
+    sufijo = "SOSMadera" if plantilla == "sosmadera" else "TopRedes"
+    return f"{numero}-{solo_letras}-{sufijo}"
 
 SALIDA = os.path.join(fc.HERE, "facturas_generadas")
 os.makedirs(SALIDA, exist_ok=True)
@@ -36,7 +37,7 @@ DEFAULTS = {
     "descripcion": "Instalación de red de seguridad para gatos",
     "cantidad": 1, "precio": 0.0, "incl_iva": True,
     "tipo_iva": "R", "forma_pago": "Transferencia", "pagada": True,
-    "serie": "M", "fecha": date.today(), "pegado": "",
+    "serie": "M", "plantilla": "topredes", "fecha": date.today(), "pegado": "",
     "ultimo": None,
 }
 for k, v in DEFAULTS.items():
@@ -83,11 +84,16 @@ with st.expander("📋 Pegar datos del cliente (rellena el formulario)", expande
 
 # ------------------------------------------------------------ 2. formulario
 st.subheader("Datos de la factura")
-col1, col2 = st.columns([1, 1])
+PLANTILLAS = {"topredes": "Top Redes", "sosmadera": "SOS Madera"}
+col1, col2, col3 = st.columns([1, 1, 1])
 with col1:
     serie = st.radio("Serie", ["M", "T"], key="serie", horizontal=True,
                      help="M = serie habitual · T = serie de presupuestos/facturas T")
 with col2:
+    plantilla = st.radio("Emisor / plantilla", list(PLANTILLAS), key="plantilla", horizontal=True,
+                         format_func=lambda k: PLANTILLAS[k],
+                         help="Elige el diseño del PDF: Top Redes o SOS Madera. La numeración es la misma.")
+with col3:
     fecha = st.date_input("Fecha", key="fecha", format="DD/MM/YYYY")
 
 siguiente = counters_store.read_counters()[serie]
@@ -171,6 +177,7 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
         "precio": precio,
         "precio_incluye_iva": st.session_state.incl_iva,
         "iva_code": tipo,
+        "plantilla": plantilla,
     }
     try:
         with st.spinner("Generando PDF..."):
@@ -179,7 +186,7 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
         st.session_state.pop(key_num, None)  # el campo vuelve a proponer el siguiente
         st.session_state.ultimo = {"numero": numero, "pdf": pdf_path, "docx": docx_path,
                                    "total": fc.fmt(imp["total"]),
-                                   "nombre": nombre_descarga(numero, datos["cliente"])}
+                                   "nombre": nombre_descarga(numero, datos["cliente"], plantilla)}
     except Exception as ex:  # noqa: BLE001
         st.error(
             f"No se pudo completar la factura: {ex}\n\n"
