@@ -11,25 +11,48 @@ import streamlit as st
 import counters_store
 import facturas_core as fc
 
+# Plantilla -> (serie de numeración, sufijo del nombre de descarga)
+PLANTILLAS = {"topredes": "Top Redes", "sosmadera": "SOS Madera"}
+SERIE_DE = {"topredes": "T", "sosmadera": "M"}
+SUFIJO_DE = {"topredes": "TopRedes", "sosmadera": "SOSMadera"}
+
+
 def nombre_descarga(numero, cliente, plantilla="topredes"):
-    """Nombre de descarga: 26-T0006-CatherineAntequera-TopRedes (sin tildes ni espacios)."""
+    """Nombre de descarga según la plantilla.
+
+    Top Redes : 26-T0006-CatherineAntequera-TopRedes
+    SOS Madera: 26-M0040-JoseJoaquinPerezRedon-SOSMadera
+    Sin tildes ni espacios.
+    """
     import re
     import unicodedata
     sin_tildes = unicodedata.normalize("NFKD", cliente).encode("ascii", "ignore").decode("ascii")
     solo_letras = re.sub(r"[^A-Za-z0-9]", "", sin_tildes)
-    sufijo = "SOSMadera" if plantilla == "sosmadera" else "TopRedes"
-    return f"{numero}-{solo_letras}-{sufijo}"
+    return f"{numero}-{solo_letras}-{SUFIJO_DE[plantilla]}"
+
 
 SALIDA = os.path.join(fc.HERE, "facturas_generadas")
 os.makedirs(SALIDA, exist_ok=True)
 
-st.set_page_config(page_title="Facturas Top Redes", page_icon="🐾", layout="centered")
+st.set_page_config(page_title="Facturación Top Redes · SOS Madera", page_icon="🧾", layout="centered")
 st.markdown(
-    "<h2 style='color:#E01B7D;margin-bottom:0'>🐾 Facturas Top Redes Valencia</h2>"
-    "<p style='color:#666'>Pega los datos del cliente o rellena el formulario. "
-    "El PDF sale con el mismo diseño de la plantilla.</p>",
+    "<h2 style='color:#E01B7D;margin-bottom:0'>Facturación</h2>"
+    "<p style='color:#444;margin-top:2px'>Top Redes (serie T) · SOS Madera (serie M)</p>",
     unsafe_allow_html=True,
 )
+
+with st.expander("📌 Instrucciones importantes (leer antes de generar)", expanded=False):
+    st.markdown(
+        """
+- **Plantilla:** *Top Redes* usa la serie **T**; *SOS Madera* usa la serie **M**. Se cambian a la vez.
+- **Número:** se propone el siguiente correlativo. Puedes escribir otro (si ya hay facturas emitidas fuera de la app). Al generar, el contador pasa al número usado + 1.
+- **Precio incluye IVA:** márcalo si el importe es el **total con IVA** (la app lo desglosa). Si no lo marcas, el importe es la **base** y se le suma el IVA.
+- **Tipo de IVA:** se propone según el NIF: *particular* → R (10 %), *empresa (CIF)* → N (21 %). Cámbialo a mano si hace falta.
+- **Forma de pago:** elige *Transferencia* (añade los datos bancarios), *Tarjeta* o *Efectivo*.
+- **Cuño PAGADA:** márcalo solo si la factura **ya está cobrada**. Si no, desmárcalo.
+- **Descarga:** baja siempre el PDF y el Word. Los archivos no se guardan en el servidor.
+        """
+    )
 
 # ------------------------------------------------------------ estado inicial
 DEFAULTS = {
@@ -37,7 +60,7 @@ DEFAULTS = {
     "descripcion": "Instalación de red de seguridad para gatos",
     "cantidad": 1, "precio": 0.0, "incl_iva": True,
     "tipo_iva": "R", "forma_pago": "Transferencia", "pagada": True,
-    "serie": "M", "plantilla": "topredes", "fecha": date.today(), "pegado": "",
+    "plantilla": "topredes", "fecha": date.today(), "pegado": "",
     "ultimo": None,
 }
 for k, v in DEFAULTS.items():
@@ -84,20 +107,21 @@ with st.expander("📋 Pegar datos del cliente (rellena el formulario)", expande
 
 # ------------------------------------------------------------ 2. formulario
 st.subheader("Datos de la factura")
-PLANTILLAS = {"topredes": "Top Redes", "sosmadera": "SOS Madera"}
-col1, col2, col3 = st.columns([1, 1, 1])
+col1, col2 = st.columns([1, 1])
 with col1:
-    serie = st.radio("Serie", ["M", "T"], key="serie", horizontal=True,
-                     help="M = serie habitual · T = serie de presupuestos/facturas T")
-with col2:
-    plantilla = st.radio("Emisor / plantilla", list(PLANTILLAS), key="plantilla", horizontal=True,
+    plantilla = st.radio("Factura de", list(PLANTILLAS), key="plantilla", horizontal=True,
                          format_func=lambda k: PLANTILLAS[k],
-                         help="Elige el diseño del PDF: Top Redes o SOS Madera. La numeración es la misma.")
-with col3:
+                         help="Top Redes → serie T · SOS Madera → serie M")
+with col2:
     fecha = st.date_input("Fecha", key="fecha", format="DD/MM/YYYY")
+serie = SERIE_DE[plantilla]
+st.caption(f"Serie aplicada: **{serie}** ({PLANTILLAS[plantilla]})")
 
 siguiente = counters_store.read_counters()[serie]
 key_num = f"numero_{serie}"
+if st.session_state.pop("_reset_numero", False):
+    # se pide antes de dibujar el campo: es seguro reiniciarlo aquí
+    st.session_state.pop(key_num, None)
 if key_num not in st.session_state:
     st.session_state[key_num] = siguiente
 st.number_input(
@@ -129,7 +153,8 @@ with c4:
 
 c5, c6 = st.columns(2)
 with c5:
-    st.checkbox("El precio INCLUYE IVA (desglosar)", key="incl_iva")
+    st.checkbox("El precio INCLUYE IVA (desglosar)", key="incl_iva",
+                help="Marcado: el importe es el total con IVA. Sin marcar: el importe es la base y se suma IVA.")
     tipo = st.radio(
         "Tipo de IVA", ["R", "N"], key="tipo_iva", horizontal=True,
         format_func=lambda c: f"{c} · IVA {fc.IVA_CODES[c]} %",
@@ -137,8 +162,9 @@ with c5:
     )
     st.caption("Propuesto: " + ("empresa → 21 %" if fc.es_empresa(st.session_state.nif) else "particular → 10 %"))
 with c6:
-    st.selectbox("Forma de pago", fc.PAYMENT_METHODS, key="forma_pago")
-    st.checkbox("Marcar como PAGADA", key="pagada")
+    st.selectbox("Forma de pago", fc.PAYMENT_METHODS, key="forma_pago",
+                 help="Transferencia añade los datos bancarios al pie de la factura")
+    st.checkbox("Mostrar cuño PAGADA (factura cobrada)", key="pagada")
 
 # ------------------------------------------------------------ 3. previsualización de importes
 precio = st.session_state.precio
@@ -183,7 +209,8 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
         with st.spinner("Generando PDF..."):
             docx_path, pdf_path, imp = fc.build_invoice(datos, SALIDA)
         fc.commit_number(serie, usado)   # solo se avanza si todo ha ido bien
-        st.session_state.pop(key_num, None)  # el campo vuelve a proponer el siguiente
+        st.session_state["_reset_numero"] = True  # al siguiente rerun, el campo vuelve a proponer el nuevo número
+        st.session_state["_gen_ok"] = True
         st.session_state.ultimo = {"numero": numero, "pdf": pdf_path, "docx": docx_path,
                                    "total": fc.fmt(imp["total"]),
                                    "nombre": nombre_descarga(numero, datos["cliente"], plantilla)}
@@ -193,6 +220,9 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
             "Si el error menciona funciones o argumentos, sube TODOS los archivos de esta carpeta "
             "al repositorio (app.py, facturas_core.py, counters_store.py), no solo app.py."
         )
+
+if st.session_state.pop("_gen_ok", False):
+    st.rerun()   # fuera del try: refresca el campo de número con el nuevo correlativo
 
 # ------------------------------------------------------------ 5. descargas
 ult = st.session_state.ultimo
