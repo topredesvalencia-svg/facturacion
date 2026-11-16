@@ -30,8 +30,8 @@ PAYMENT_METHODS = ["Transferencia", "Tarjeta", "Efectivo"]
 # Datos fijos de la empresa (ya están en la plantilla; se usan para la forma de pago)
 BANK = {
     "beneficiario": "SOSMADERA SL",
-    "iban": "ES32 2100 4972 6522 0037 5285",
-    "entidad": "CAIXABANK, S.A.",
+    "iban": "ES71 0049 3338 5127 1416 0525",
+    "entidad": "BANCO SANTANDER, S.A.",
 }
 
 
