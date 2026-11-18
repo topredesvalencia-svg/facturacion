@@ -40,7 +40,7 @@ os.makedirs(SALIDA, exist_ok=True)
 st.set_page_config(page_title="Facturación Top Redes · SOS Madera", page_icon="🧾", layout="centered")
 
 # Comprobación de versión: avisa si facturas_core.py en el repositorio no es el actualizado
-VERSION_ESPERADA = "2026-11-18-sede"
+VERSION_ESPERADA = "2026-11-18-sede2"
 if getattr(fc, "VERSION", None) != VERSION_ESPERADA:
     st.error(
         "⚠️ El archivo facturas_core.py del repositorio es una versión antigua. "
