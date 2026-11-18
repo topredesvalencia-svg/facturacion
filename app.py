@@ -38,6 +38,15 @@ SALIDA = os.path.join(fc.HERE, "facturas_generadas")
 os.makedirs(SALIDA, exist_ok=True)
 
 st.set_page_config(page_title="Facturación Top Redes · SOS Madera", page_icon="🧾", layout="centered")
+
+# Comprobación de versión: avisa si facturas_core.py en el repositorio no es el actualizado
+VERSION_ESPERADA = "2026-11-18-sede"
+if getattr(fc, "VERSION", None) != VERSION_ESPERADA:
+    st.error(
+        "⚠️ El archivo facturas_core.py del repositorio es una versión antigua. "
+        "Sube TODOS los archivos de la carpeta (sobre todo facturas_core.py) y pulsa Reboot app. "
+        "Hasta entonces, la sede Madrid y otras novedades no se aplicarán."
+    )
 st.markdown(
     "<h2 style='color:#E01B7D;margin-bottom:0'>Facturación</h2>"
     "<p style='color:#444;margin-top:2px'>Top Redes (serie T) · SOS Madera (serie M)</p>",

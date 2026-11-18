@@ -15,6 +15,9 @@ from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from lxml import etree
 
+# Versión de este módulo: la app comprueba que coincide con la suya
+VERSION = "2026-11-18-sede"
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "plantilla.docx")                 # Top Redes
 TEMPLATE_SOS = os.path.join(HERE, "plantilla_sosmadera.docx")   # SOS Madera
