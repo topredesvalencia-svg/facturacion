@@ -219,6 +219,11 @@ def _add_bank_lines(anchor):
 
 # ---------------------------------------------------------------- relleno
 def _fill_document(root, d):
+    # 0) Sede (solo plantilla Top Redes): cambia el título junto al logo
+    if d.get("sede") == "Madrid":
+        for t in root.iter(q("t")):
+            if t.text == "Top Redes Valencia":
+                t.text = "Top Redes Madrid"
     # 1) Cabecera: cliente y factura (cuadros de texto; se aplican a todas las copias)
     client_name_done = False
     for p in root.iter(q("p")):

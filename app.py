@@ -17,7 +17,7 @@ SERIE_DE = {"topredes": "T", "sosmadera": "M"}
 SUFIJO_DE = {"topredes": "TopRedes", "sosmadera": "SOSMadera"}
 
 
-def nombre_descarga(numero, cliente, plantilla="topredes"):
+def nombre_descarga(numero, cliente, plantilla="topredes", sede="Valencia"):
     """Nombre de descarga según la plantilla.
 
     Top Redes : 26-T0006-CatherineAntequera-TopRedes
@@ -28,7 +28,10 @@ def nombre_descarga(numero, cliente, plantilla="topredes"):
     import unicodedata
     sin_tildes = unicodedata.normalize("NFKD", cliente).encode("ascii", "ignore").decode("ascii")
     solo_letras = re.sub(r"[^A-Za-z0-9]", "", sin_tildes)
-    return f"{numero}-{solo_letras}-{SUFIJO_DE[plantilla]}"
+    sufijo = SUFIJO_DE[plantilla]
+    if plantilla == "topredes" and sede == "Madrid":
+        sufijo = "TopRedesMadrid"
+    return f"{numero}-{solo_letras}-{sufijo}"
 
 
 SALIDA = os.path.join(fc.HERE, "facturas_generadas")
@@ -45,6 +48,7 @@ with st.expander("📌 Instrucciones importantes (leer antes de generar)", expan
     st.markdown(
         """
 - **Plantilla:** *Top Redes* usa la serie **T**; *SOS Madera* usa la serie **M**. Se cambian a la vez.
+- **Sede (Top Redes):** elige *Valencia* o *Madrid*. Cambia el título junto al logo y el nombre del fichero.
 - **Número:** se propone el siguiente correlativo. Puedes escribir otro (si ya hay facturas emitidas fuera de la app). Al generar, el contador pasa al número usado + 1.
 - **Precio incluye IVA:** márcalo si el importe es el **total con IVA** (la app lo desglosa). Si no lo marcas, el importe es la **base** y se le suma el IVA.
 - **Tipo de IVA:** se propone según el NIF: *particular* → R (10 %), *empresa (CIF)* → N (21 %). Cámbialo a mano si hace falta.
@@ -115,7 +119,11 @@ with col1:
 with col2:
     fecha = st.date_input("Fecha", key="fecha", format="DD/MM/YYYY")
 serie = SERIE_DE[plantilla]
-st.caption(f"Serie aplicada: **{serie}** ({PLANTILLAS[plantilla]})")
+sede = "Valencia"
+if plantilla == "topredes":
+    sede = st.radio("Sede", ["Valencia", "Madrid"], key="sede", horizontal=True,
+                    help="Cambia el título junto al logo: Top Redes Valencia / Top Redes Madrid")
+st.caption(f"Serie aplicada: **{serie}** ({PLANTILLAS[plantilla]}" + (f" · {sede})" if plantilla == "topredes" else ")"))
 
 siguiente = counters_store.read_counters()[serie]
 key_num = f"numero_{serie}"
@@ -204,6 +212,7 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
         "precio_incluye_iva": st.session_state.incl_iva,
         "iva_code": tipo,
         "plantilla": plantilla,
+        "sede": sede,
     }
     try:
         with st.spinner("Generando PDF..."):
@@ -213,7 +222,7 @@ if st.button("⬇️ Generar factura", type="primary", disabled=bool(errores), u
         st.session_state["_gen_ok"] = True
         st.session_state.ultimo = {"numero": numero, "pdf": pdf_path, "docx": docx_path,
                                    "total": fc.fmt(imp["total"]),
-                                   "nombre": nombre_descarga(numero, datos["cliente"], plantilla)}
+                                   "nombre": nombre_descarga(numero, datos["cliente"], plantilla, sede)}
     except Exception as ex:  # noqa: BLE001
         st.error(
             f"No se pudo completar la factura: {ex}\n\n"
