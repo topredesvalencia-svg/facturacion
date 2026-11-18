@@ -16,7 +16,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from lxml import etree
 
 # Versión de este módulo: la app comprueba que coincide con la suya
-VERSION = "2026-11-18-sede"
+VERSION = "2026-11-18-sede2"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE = os.path.join(HERE, "plantilla.docx")                 # Top Redes
@@ -227,6 +227,8 @@ def _fill_document(root, d):
         for t in root.iter(q("t")):
             if t.text == "Top Redes Valencia":
                 t.text = "Top Redes Madrid"
+            elif t.text and "topredesvalencia@gmail.com" in t.text:
+                t.text = t.text.replace("topredesvalencia@gmail.com", "info@topredesmadrid.es")
     # 1) Cabecera: cliente y factura (cuadros de texto; se aplican a todas las copias)
     client_name_done = False
     for p in root.iter(q("p")):
